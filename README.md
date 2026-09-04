@@ -1,4 +1,4 @@
-# SOPhia — Local RAG Chatbot for SOP / Policy Documents
+# SOP_Chatbot — Local RAG Chatbot for SOP / Policy Documents
 
 A fully local, retrieval-augmented chatbot that answers questions directly from Standard Operating Procedure (SOP) documents. No external APIs — 100% self-hosted inference, so no proprietary/sensitive data ever leaves the network.
 
