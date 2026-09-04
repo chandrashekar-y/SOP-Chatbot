@@ -1,0 +1,49 @@
+# Local workflow scripts (Windows only — not needed in repo)
+new-change.cmd
+push-change.cmd
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Secrets / environment
+.env
+*.key
+service_account_key.json
+service_account_key.json.json
+
+# Runtime / generated data
+logs/
+*.log
+chroma_db/
+chroma_db_new/
+feedback.jsonl
+
+# Debug / temp output files
+dbg*.txt
+inspect_*.py
+inspect_*.txt
+test_*.py
+gap_check.py
+count_records.py
+fix_*.py
+analyze_sop.py
+
+# Archives
+*.zip
+
+# Office files / SOPs (large binary files — kept locally, not in repo)
+*.docx
+*.xlsx
+*.xls
+*.csv
+~$*
+
+# Source SOP files and converted schemas — never commit real content
+data/
+data_schema/
+
+# OS / editor junk
+Thumbs.db
+.DS_Store

@@ -1,0 +1,46 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Secrets — never bake into image
+.env
+
+# Git
+.git/
+.gitignore
+
+# Markdown docs (not needed at runtime)
+*.md
+DEPLOY.md
+README.md
+
+# Raw SOP source files — large binaries, not needed in image
+# The converted data_schema/ JSONs ARE included (needed at runtime)
+data/
+
+# ChromaDB — rebuilt at runtime if needed
+chroma_db/
+chroma_db_new/
+
+# Feedback file — mounted as volume, not baked in
+feedback.jsonl
+
+# Logs
+*.log
+streamlit.log
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+*.swp
+
+# Test / debug scripts
+test_*.py
+dbg*.txt
+inspect_*.py
+gap_check.py
+count_records.py
+fix_*.py

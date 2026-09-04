@@ -1,0 +1,112 @@
+version: "3.9"
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SOP Chatbot — Production Docker Compose (GPU only)
+# ══════════════════════════════════════════════════════════════════════════════
+# Requirements: NVIDIA GPU + nvidia-container-toolkit installed on host
+#
+# Deploy:   docker compose up -d
+# Logs:     docker compose logs -f
+# Stop:     docker compose down
+# ══════════════════════════════════════════════════════════════════════════════
+
+services:
+
+  # ── Ollama — GPU accelerated LLM server ──────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: sop_ollama
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:11434:11434"   # internal only — not exposed to internet
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_NUM_PARALLEL=4        # 4 concurrent requests (32b offloads overflow to 55GB system RAM)
+      - OLLAMA_MAX_LOADED_MODELS=1   # keep model in GPU memory always
+      - OLLAMA_FLASH_ATTENTION=1     # faster attention on supported GPUs
+      - OLLAMA_KEEP_ALIVE=-1         # keep model loaded forever, never unload
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ── Model pull — runs once on first start ─────────────────────────────────
+  ollama-pull:
+    image: ollama/ollama:latest
+    container_name: sop_model_pull
+    restart: "no"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=http://sop_ollama:11434
+    entrypoint: >
+      sh -c "
+        echo 'Pulling qwen2.5:32b...' &&
+        ollama pull qwen2.5:32b &&
+        ollama pull nomic-embed-text &&
+        echo 'Models ready.'
+      "
+    volumes:
+      - ollama_data:/root/.ollama
+
+  # ── Nginx — reverse proxy ─────────────────────────────────────────────────
+  nginx:
+    image: nginx:stable-alpine
+    container_name: sop_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      sop-chatbot:
+        condition: service_healthy
+
+  # ── SOP Chatbot — Streamlit app ───────────────────────────────────────────
+  sop-chatbot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sop-chatbot:latest
+    container_name: sop_chatbot
+    restart: unless-stopped
+    # Exposed on port 5001 — access via http://<your-server-ip>:5001
+    ports:
+      - "5001:8501"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - OLLAMA_BASE_URL=http://sop_ollama:11434
+      - OLLAMA_LLM_MODEL=qwen2.5:32b
+      - OLLAMA_EMBED_MODEL=nomic-embed-text
+      - USE_HYBRID=1
+      - USE_CLAUDE=0
+      - SCHEMA_DIR=/app/data_schema
+    volumes:
+      - ./feedback.jsonl:/app/feedback.jsonl
+      - ./data_schema:/app/data_schema:ro
+      - ./data:/app/data:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  ollama_data:
+    driver: local
