@@ -34,7 +34,7 @@ Browser → Nginx (SSL) → Docker container (Streamlit app)
 ## Project Structure
 
 ```
-SOPhia/
+SOP-Chatbot/
 ├── streamlit_gemini.py          # Main Streamlit app (auth, chat, theming, streaming)
 ├── hybrid_sop_engine.py         # Retrieval engine: relevance filter + Ollama client
 ├── sop_watcher.py               # Drop-folder watcher (run by cron)
